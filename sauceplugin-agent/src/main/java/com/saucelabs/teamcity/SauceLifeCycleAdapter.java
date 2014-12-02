@@ -181,6 +181,46 @@ public class SauceLifeCycleAdapter extends AgentLifeCycleAdapter {
     }
 
     /**
+     * This class tries to encapsulate a big gap between the saucelabs REST API and
+     * their platform configurator. They massage the results of their own REST API!
+     */
+    public class WorkaroundBrowser{
+
+        private Browser browser;
+
+        public WorkaroundBrowser(Browser browser) {
+            this.browser = browser;
+        }
+
+        public String getDeviceName() {
+            String longName = browser.getLongName();
+            if (longName.toLowerCase().equals("ipad")) {
+                return "iPad Simulator";
+            }
+            if (longName.toLowerCase().equals("iphone")) {
+                return "iPhone Simulator";
+            }
+            return longName;
+        }
+
+        public String getBrowserName() {
+            return browser.getBrowserName();
+        }
+
+        public String getVersion() {
+            return browser.getVersion();
+        }
+
+        public String getOs() {
+            return browser.getOs();
+        }
+
+        public String getDeviceOrientation() {
+            return browser.getDeviceOrientation();
+        }
+    }
+
+    /**
      *
      * @param runningBuild
      * @param feature contains the Sauce information set by the user within the build configuration
@@ -196,12 +236,13 @@ public class SauceLifeCycleAdapter extends AgentLifeCycleAdapter {
             Browser browser = sauceBrowserFactory.webDriverBrowserForKey(selectedBrowsers[0]);
             if (browser != null) {
                 String sodDriverURI = getSodDriverUri(userName, apiKey, browser, feature);
-                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_BROWSER_ENV, browser.getBrowserName());
-                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_VERSION_ENV, browser.getVersion());
-                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_PLATFORM_ENV, browser.getOs());
+                WorkaroundBrowser workaroundBrowser = new WorkaroundBrowser(browser);
+                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_BROWSER_ENV, workaroundBrowser.getBrowserName());
+                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_VERSION_ENV, workaroundBrowser.getVersion());
+                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_PLATFORM_ENV, workaroundBrowser.getOs());
                 addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_DRIVER_ENV, sodDriverURI);
-                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_ORIENTATION, browser.getDeviceOrientation());
-                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_DEVICE, browser.getLongName());
+                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_ORIENTATION, workaroundBrowser.getDeviceOrientation());
+                addSharedEnvironmentVariable(runningBuild, Constants.SELENIUM_DEVICE, workaroundBrowser.getDeviceName());
             }
         } else {
             JSONArray browsersJSON = new JSONArray();
